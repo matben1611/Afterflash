@@ -91,6 +91,19 @@ These settings depend on user input:
 
 ---
 
+## External Tool Integration
+
+At the end of the setup process, this project can optionally launch **Win11Debloat** by **Raphire**.
+
+Win11Debloat is a lightweight PowerShell project for decluttering and customizing Windows. According to its repository, it can remove pre-installed apps, disable telemetry, remove intrusive interface elements, and perform other Windows customization changes. It supports both **Windows 10** and **Windows 11**. :contentReference[oaicite:0]{index=0}
+
+In this project, Win11Debloat is not bundled directly.  
+Instead, it is started optionally through its official quick-launch command:
+
+```powershell
+& ([scriptblock]::Create((irm "https://debloat.raphi.re/")))
+```
+
 ## BIOS Change Disclaimer
 
 The BIOS recommendations referenced by this project are general baseline suggestions only.
