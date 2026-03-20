@@ -42,8 +42,6 @@ The current implementation includes:
 
 The script is intentionally interactive for selected settings so the user can decide case by case during execution.
 
-The script is intentionally interactive for selected settings so the user can decide case by case during execution.
-
 ---
 
 ## Goals
