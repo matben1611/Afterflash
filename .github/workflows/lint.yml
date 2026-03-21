@@ -38,11 +38,13 @@ jobs:
       - name: Install Pester
         shell: pwsh
         run: |
+          Remove-Module Pester -Force -ErrorAction SilentlyContinue
           Install-Module -Name Pester -RequiredVersion 5.7.1 -Force -Scope CurrentUser -SkipPublisherCheck
 
       - name: Run Pester Tests
         shell: pwsh
         run: |
+          Remove-Module Pester -Force -ErrorAction SilentlyContinue
           Invoke-Pester -Path ./tests -PassThru
 
   markdown:
