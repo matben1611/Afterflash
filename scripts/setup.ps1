@@ -244,27 +244,43 @@ function Open-NiniteIfWanted {
 
 function Set-OptionalDiagnosticDataOff {
     Write-Host ""
-    Write-Info "Disabling optional diagnostic data..."
+    $disableDiagnostics = Read-YesNo -Prompt "Do you want to disable optional diagnostic data"
 
-    Set-DwordValue `
-        -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection' `
-        -Name 'AllowTelemetry' `
-        -Value 1
+    if ($disableDiagnostics) {
+        Write-Info "Disabling optional diagnostic data..."
 
-    Write-Ok "Diagnostic data set to Required only."
+        Set-DwordValue `
+            -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection' `
+            -Name 'AllowTelemetry' `
+            -Value 1
+
+        Write-Ok "Diagnostic data set to Required only."
+    }
+    else {
+        Write-Info "Diagnostic data settings were not changed."
+    }
+
     Write-Host ""
 }
 
 function Set-DeliveryOptimizationHttpOnly {
     Write-Host ""
-    Write-Info "Setting Delivery Optimization to HTTP only..."
+    $disableDeliveryOptimization = Read-YesNo -Prompt "Do you want to disable Delivery Optimization peer-to-peer"
 
-    Set-DwordValue `
-        -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization' `
-        -Name 'DODownloadMode' `
-        -Value 0
+    if ($disableDeliveryOptimization) {
+        Write-Info "Setting Delivery Optimization to HTTP only..."
 
-    Write-Ok "Delivery Optimization peer-to-peer disabled."
+        Set-DwordValue `
+            -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization' `
+            -Name 'DODownloadMode' `
+            -Value 0
+
+        Write-Ok "Delivery Optimization peer-to-peer disabled."
+    }
+    else {
+        Write-Info "Delivery Optimization settings were not changed."
+    }
+
     Write-Host ""
 }
 
@@ -330,79 +346,112 @@ function Test-DoNotDisturbIfWanted {
 
 function Set-HardwareAcceleratedGpuSchedulingOn {
     Write-Host ""
-    Write-Info "Enabling hardware-accelerated GPU scheduling..."
-    
-    Set-DwordValue `
-        -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers' `
-        -Name 'HwSchMode' `
-        -Value 2
+    $enableGpuScheduling = Read-YesNo -Prompt "Do you want to enable hardware-accelerated GPU scheduling"
 
-    Write-WarnMsg "A restart may be required."
+    if ($enableGpuScheduling) {
+        Write-Info "Enabling hardware-accelerated GPU scheduling..."
+        
+        Set-DwordValue `
+            -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers' `
+            -Name 'HwSchMode' `
+            -Value 2
+
+        Write-WarnMsg "A restart may be required."
+    }
+    else {
+        Write-Info "Hardware-accelerated GPU scheduling was not changed."
+    }
+
     Write-Host ""
 }
 
 function Set-VariableRefreshRateOff {
     Write-Host ""
-    Write-Info "Disabling Variable Refresh Rate..."
+    $disableVrr = Read-YesNo -Prompt "Do you want to disable Variable Refresh Rate"
 
-    $path = 'HKCU:\Software\Microsoft\DirectX\UserGpuPreferences'
-    $name = 'DirectXUserGlobalSettings'
+    if ($disableVrr) {
+        Write-Info "Disabling Variable Refresh Rate..."
 
-    Test-RegistryKey -Path $path
+        $path = 'HKCU:\Software\Microsoft\DirectX\UserGpuPreferences'
+        $name = 'DirectXUserGlobalSettings'
 
-    $existing = ''
-    try {
-        $existing = (Get-ItemProperty -Path $path -Name $name -ErrorAction Stop).$name
-    }
-    catch {
+        Test-RegistryKey -Path $path
+
         $existing = ''
-    }
+        try {
+            $existing = (Get-ItemProperty -Path $path -Name $name -ErrorAction Stop).$name
+        }
+        catch {
+            $existing = ''
+        }
 
-    $map = [ordered]@{}
+        $map = [ordered]@{}
 
-    if ($existing) {
-        $tokens = $existing -split ';' | Where-Object { $_ -and $_.Trim() -ne '' }
-        foreach ($token in $tokens) {
-            $parts = $token -split '=', 2
-            if ($parts.Count -eq 2) {
-                $map[$parts[0].Trim()] = $parts[1].Trim()
+        if ($existing) {
+            $tokens = $existing -split ';' | Where-Object { $_ -and $_.Trim() -ne '' }
+            foreach ($token in $tokens) {
+                $parts = $token -split '=', 2
+                if ($parts.Count -eq 2) {
+                    $map[$parts[0].Trim()] = $parts[1].Trim()
+                }
             }
         }
+
+        $map['VRROptimizeEnable'] = '0'
+
+        $newValue = (($map.GetEnumerator() | ForEach-Object { "$($_.Key)=$($_.Value)" }) -join ';') + ';'
+
+        Set-StringValue -Path $path -Name $name -Value $newValue
+        Write-WarnMsg "Signing out/in or restarting may be required."
+    }
+    else {
+        Write-Info "Variable Refresh Rate settings were not changed."
     }
 
-    $map['VRROptimizeEnable'] = '0'
-
-    $newValue = (($map.GetEnumerator() | ForEach-Object { "$($_.Key)=$($_.Value)" }) -join ';') + ';'
-
-    Set-StringValue -Path $path -Name $name -Value $newValue
-    Write-WarnMsg "Signing out/in or restarting may be required."
     Write-Host ""
 }
 
 function Set-GameModeOff {
     Write-Host ""
-    Write-Info "Disabling Game Mode..."
+    $disableGameMode = Read-YesNo -Prompt "Do you want to disable Game Mode"
 
-    Set-DwordValue `
-        -Path 'HKCU:\Software\Microsoft\GameBar' `
-        -Name 'AutoGameModeEnabled' `
-        -Value 0
+    if ($disableGameMode) {
+        Write-Info "Disabling Game Mode..."
+
+        Set-DwordValue `
+            -Path 'HKCU:\Software\Microsoft\GameBar' `
+            -Name 'AutoGameModeEnabled' `
+            -Value 0
+
+        Write-Ok "Game Mode disabled."
+    }
+    else {
+        Write-Info "Game Mode settings were not changed."
+    }
 
     Write-Host ""
 }
 
 function Set-MouseAccelerationOff {
     Write-Host ""
-    Write-Info "Disabling mouse acceleration..."
+    $disableMouseAcceleration = Read-YesNo -Prompt "Do you want to disable mouse acceleration"
 
-    $path = 'HKCU:\Control Panel\Mouse'
-    Test-RegistryKey -Path $path
+    if ($disableMouseAcceleration) {
+        Write-Info "Disabling mouse acceleration..."
 
-    Set-StringValue -Path $path -Name 'MouseSpeed'      -Value '0'
-    Set-StringValue -Path $path -Name 'MouseThreshold1' -Value '0'
-    Set-StringValue -Path $path -Name 'MouseThreshold2' -Value '0'
+        $path = 'HKCU:\Control Panel\Mouse'
+        Test-RegistryKey -Path $path
 
-    Write-WarnMsg "Signing out/in or restarting may be required."
+        Set-StringValue -Path $path -Name 'MouseSpeed'      -Value '0'
+        Set-StringValue -Path $path -Name 'MouseThreshold1' -Value '0'
+        Set-StringValue -Path $path -Name 'MouseThreshold2' -Value '0'
+
+        Write-WarnMsg "Signing out/in or restarting may be required."
+    }
+    else {
+        Write-Info "Mouse acceleration settings were not changed."
+    }
+
     Write-Host ""
 }
 
