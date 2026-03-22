@@ -4,6 +4,9 @@ param()
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+$script:LogEntries = [System.Collections.Generic.List[string]]::new()
+$script:SystemSummary = 'Unknown'
+
 function Test-IsAdmin {
     $currentIdentity = [Security.Principal.WindowsIdentity]::GetCurrent()
     $principal = New-Object Security.Principal.WindowsPrincipal($currentIdentity)
@@ -58,6 +61,36 @@ function Write-WarnMsg {
     Write-Warning $Message
 }
 
+function Write-Log {
+    param([string]$Message)
+    $ts = Get-Date -Format 'HH:mm:ss'
+    $script:LogEntries.Add("[$ts] $Message")
+}
+
+function Save-Log {
+    try {
+        $desktopPath = [Environment]::GetFolderPath('Desktop')
+        $logPath = Join-Path $desktopPath 'afterflash-log.txt'
+        $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+
+        $lines = [System.Collections.Generic.List[string]]::new()
+        $lines.Add("afterflash log")
+        $lines.Add("Generated: $timestamp")
+        $lines.Add("System:    $script:SystemSummary")
+        $lines.Add("========================================")
+        $lines.Add("")
+        foreach ($entry in $script:LogEntries) {
+            $lines.Add($entry)
+        }
+
+        Set-Content -Path $logPath -Value $lines -Encoding UTF8
+        Write-Ok "Log saved to: $logPath"
+    }
+    catch {
+        Write-WarnMsg "Could not save log: $_"
+    }
+}
+
 function Read-YesNo {
     param(
         [Parameter(Mandatory)]
@@ -89,24 +122,62 @@ function Set-DwordValue {
     param(
         [Parameter(Mandatory)][string]$Path,
         [Parameter(Mandatory)][string]$Name,
-        [Parameter(Mandatory)][int]$Value
+        [Parameter(Mandatory)][int]$Value,
+        [string]$Label = ''
     )
 
     Test-RegistryKey -Path $Path
+
+    $current = $null
+    try {
+        $current = (Get-ItemProperty -Path $Path -Name $Name -ErrorAction Stop).$Name
+    }
+    catch {
+        $current = $null
+    }
+
+    $displayName = if ($Label) { $Label } else { $Name }
+
+    if ($null -ne $current -and $current -eq $Value) {
+        Write-Info "$displayName is already set to $Value"
+        Write-Log "[SKIP ] $displayName`: already $Value"
+        return
+    }
+
     New-ItemProperty -Path $Path -Name $Name -Value $Value -PropertyType DWord -Force | Out-Null
     Write-Ok "$Path -> $Name = $Value"
+    Write-Log "[ SET ] $displayName`: $Value"
 }
 
 function Set-StringValue {
     param(
         [Parameter(Mandatory)][string]$Path,
         [Parameter(Mandatory)][string]$Name,
-        [Parameter(Mandatory)][string]$Value
+        [Parameter(Mandatory)][string]$Value,
+        [string]$Label = ''
     )
 
     Test-RegistryKey -Path $Path
+
+    $current = $null
+    try {
+        $current = (Get-ItemProperty -Path $Path -Name $Name -ErrorAction Stop).$Name
+    }
+    catch {
+        $current = $null
+    }
+
+    $displayName = if ($Label) { $Label } else { $Name }
+
+    if ($null -ne $current -and $current -eq $Value) {
+        Write-Info "$displayName is already set to '$Value'"
+        Write-Log "[SKIP ] $displayName`: already set"
+        return
+    }
+
     New-ItemProperty -Path $Path -Name $Name -Value $Value -PropertyType String -Force | Out-Null
     Write-Ok "$Path -> $Name = $Value"
+    Write-Log "[ SET ] $displayName`: set"
 }
 
 function Set-BiosRecommendationsFileIfWanted {
@@ -321,9 +392,11 @@ Good luck!
 
         Set-Content -Path $filePath -Value $content -Encoding ASCII
         Write-Ok "BIOS recommendations file created: $filePath"
+        Write-Log "[INFO ] BIOS recommendations file created: $filePath"
     }
     else {
         Write-Info "BIOS recommendations file was not created."
+        Write-Log "[DECL] BIOS recommendations file: user declined"
     }
 
     Write-Host ""
@@ -337,9 +410,11 @@ function Open-NiniteIfWanted {
         Write-Info "Opening Ninite in your browser..."
         Start-Process "https://ninite.com/"
         Write-Ok "Ninite opened."
+        Write-Log "[INFO ] Ninite opened"
     }
     else {
         Write-Info "Ninite was not opened."
+        Write-Log "[DECL] Ninite: user declined"
     }
 
     Write-Host ""
@@ -355,12 +430,14 @@ function Set-OptionalDiagnosticDataOff {
         Set-DwordValue `
             -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection' `
             -Name 'AllowTelemetry' `
-            -Value 1
+            -Value 1 `
+            -Label 'Diagnostic Data'
 
         Write-Ok "Diagnostic data set to Required only."
     }
     else {
         Write-Info "Diagnostic data settings were not changed."
+        Write-Log "[DECL] Diagnostic Data: user declined"
     }
 
     Write-Host ""
@@ -376,12 +453,14 @@ function Set-DeliveryOptimizationHttpOnly {
         Set-DwordValue `
             -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization' `
             -Name 'DODownloadMode' `
-            -Value 0
+            -Value 0 `
+            -Label 'Delivery Optimization'
 
         Write-Ok "Delivery Optimization peer-to-peer disabled."
     }
     else {
         Write-Info "Delivery Optimization settings were not changed."
+        Write-Log "[DECL] Delivery Optimization: user declined"
     }
 
     Write-Host ""
@@ -395,9 +474,11 @@ function Set-SystemProtectionIfWanted {
         Write-Info "Enabling System Protection on C: ..."
         Enable-ComputerRestore -Drive "C:\"
         Write-Ok "System Protection enabled on C:."
+        Write-Log "[ SET ] System Protection: enabled on C:"
     }
     else {
         Write-Info "System Protection was not changed."
+        Write-Log "[DECL] System Protection: user declined"
     }
 
     Write-Host ""
@@ -413,7 +494,8 @@ function Set-ClipboardHistoryIfWanted {
         Set-DwordValue `
             -Path 'HKCU:\Software\Microsoft\Clipboard' `
             -Name 'EnableClipboardHistory' `
-            -Value 1
+            -Value 1 `
+            -Label 'Clipboard History'
 
         Write-Ok "Clipboard History enabled."
 
@@ -426,6 +508,7 @@ function Set-ClipboardHistoryIfWanted {
     }
     else {
         Write-Info "Clipboard History was not changed."
+        Write-Log "[DECL] Clipboard History: user declined"
     }
 
     Write-Host ""
@@ -439,9 +522,11 @@ function Test-DoNotDisturbIfWanted {
         Write-Info "Opening Notifications settings..."
         Start-Process "ms-settings:notifications"
         Write-Info "Set Do Not Disturb manually in the Notifications page."
+        Write-Log "[INFO ] Do Not Disturb: settings page opened"
     }
     else {
         Write-Info "Do Not Disturb was not changed."
+        Write-Log "[DECL] Do Not Disturb: user declined"
     }
 
     Write-Host ""
@@ -457,12 +542,14 @@ function Set-HardwareAcceleratedGpuSchedulingOn {
         Set-DwordValue `
             -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers' `
             -Name 'HwSchMode' `
-            -Value 2
+            -Value 2 `
+            -Label 'GPU Scheduling'
 
         Write-WarnMsg "A restart may be required."
     }
     else {
         Write-Info "Hardware-accelerated GPU scheduling was not changed."
+        Write-Log "[DECL] GPU Scheduling: user declined"
     }
 
     Write-Host ""
@@ -500,15 +587,22 @@ function Set-VariableRefreshRateOff {
             }
         }
 
+        if ($map.ContainsKey('VRROptimizeEnable') -and $map['VRROptimizeEnable'] -eq '0') {
+            Write-Info "Variable Refresh Rate is already disabled."
+            Write-Log "[SKIP ] VRR: already disabled"
+            return
+        }
+
         $map['VRROptimizeEnable'] = '0'
 
         $newValue = (($map.GetEnumerator() | ForEach-Object { "$($_.Key)=$($_.Value)" }) -join ';') + ';'
 
-        Set-StringValue -Path $path -Name $name -Value $newValue
+        Set-StringValue -Path $path -Name $name -Value $newValue -Label 'VRR'
         Write-WarnMsg "Signing out/in or restarting may be required."
     }
     else {
         Write-Info "Variable Refresh Rate settings were not changed."
+        Write-Log "[DECL] VRR: user declined"
     }
 
     Write-Host ""
@@ -524,12 +618,14 @@ function Set-GameModeOff {
         Set-DwordValue `
             -Path 'HKCU:\Software\Microsoft\GameBar' `
             -Name 'AutoGameModeEnabled' `
-            -Value 0
+            -Value 0 `
+            -Label 'Game Mode'
 
         Write-Ok "Game Mode disabled."
     }
     else {
         Write-Info "Game Mode settings were not changed."
+        Write-Log "[DECL] Game Mode: user declined"
     }
 
     Write-Host ""
@@ -545,14 +641,15 @@ function Set-MouseAccelerationOff {
         $path = 'HKCU:\Control Panel\Mouse'
         Test-RegistryKey -Path $path
 
-        Set-StringValue -Path $path -Name 'MouseSpeed'      -Value '0'
-        Set-StringValue -Path $path -Name 'MouseThreshold1' -Value '0'
-        Set-StringValue -Path $path -Name 'MouseThreshold2' -Value '0'
+        Set-StringValue -Path $path -Name 'MouseSpeed'      -Value '0' -Label 'Mouse Speed'
+        Set-StringValue -Path $path -Name 'MouseThreshold1' -Value '0' -Label 'Mouse Threshold 1'
+        Set-StringValue -Path $path -Name 'MouseThreshold2' -Value '0' -Label 'Mouse Threshold 2'
 
         Write-WarnMsg "Signing out/in or restarting may be required."
     }
     else {
         Write-Info "Mouse acceleration settings were not changed."
+        Write-Log "[DECL] Mouse Acceleration: user declined"
     }
 
     Write-Host ""
@@ -563,12 +660,23 @@ function Set-BalancedPowerPlanIfX3D {
     $isX3D = Read-YesNo -Prompt "Is an X3D CPU installed?"
 
     if ($isX3D) {
-        Write-Info "Setting power plan to Balanced..."
-        powercfg /setactive SCHEME_BALANCED | Out-Null
-        Write-Ok "Power plan set to Balanced."
+        $balancedGuid = '381b4222-f694-41f0-9685-ff5bb260df2e'
+        $currentPlan = powercfg /getactivescheme 2>&1
+
+        if ($currentPlan -match $balancedGuid) {
+            Write-Info "Power plan is already set to Balanced."
+            Write-Log "[SKIP ] Power Plan: already Balanced"
+        }
+        else {
+            Write-Info "Setting power plan to Balanced..."
+            powercfg /setactive SCHEME_BALANCED | Out-Null
+            Write-Ok "Power plan set to Balanced."
+            Write-Log "[ SET ] Power Plan: set to Balanced"
+        }
     }
     else {
         Write-Info "X3D answer = No -> power plan remains unchanged."
+        Write-Log "[DECL] Power Plan: not an X3D system"
     }
 
     Write-Host ""
@@ -590,9 +698,11 @@ function Start-DebloaterIfWanted {
         )
 
         Write-Ok "Debloater started in a new window."
+        Write-Log "[INFO ] Debloater started"
     }
     else {
         Write-Info "Debloater was not started."
+        Write-Log "[DECL] Debloater: user declined"
     }
 
     Write-Host ""
@@ -735,6 +845,8 @@ function Show-SystemInformation {
     Write-Host ("{0,-20}: {1}" -f "BIOS Version", $biosVersion)
     Write-Host ("{0,-20}: {1}" -f "OS Version", $osVersion)
     Write-Host ("{0,-20}: {1}" -f "OS Type", $osType)
+
+    $script:SystemSummary = "$cpu | $gpu | $installedRam | $mainboardName"
 
     Write-Host ""
 }
@@ -1022,5 +1134,7 @@ catch {
     Write-Error $_
 }
 finally {
+    Write-Host ""
+    Save-Log
     Read-Host "`nPress Enter to exit..."
 }
