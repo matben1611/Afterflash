@@ -959,48 +959,18 @@ try {
     Wait-A-Bit
 
     Set-BiosRecommendationsFileIfWanted
-
-    Wait-A-Bit
-
     Open-NiniteIfWanted
-
-    Wait-A-Bit
-
     Open-GpuDriverPageIfWanted
-
-    Wait-A-Bit
-
     Open-ChipsetsDriverPageIfWanted
-
-    Wait-A-Bit
-
-    Set-HardwareAcceleratedGpuSchedulingOn
-
-    Wait-A-Bit
-    Set-VariableRefreshRateOff
-
-    Wait-A-Bit
+    Set-HardwareAcceleratedGpuSchedulingOn 
+    Set-VariableRefreshRateOff 
     Set-GameModeOff
-
-    Wait-A-Bit
-    Set-BalancedPowerPlanIfX3D
-
-    Wait-A-Bit
+    Set-BalancedPowerPlanIfX3D 
     Set-MouseAccelerationOff
-
-    Wait-A-Bit
-    Set-OptionalDiagnosticDataOff
-
-    Wait-A-Bit
-    Set-DeliveryOptimizationHttpOnly
-
-    Wait-A-Bit
+    Set-OptionalDiagnosticDataOff   
+    Set-DeliveryOptimizationHttpOnly  
     Set-SystemProtectionIfWanted
-
-    Wait-A-Bit
     Set-ClipboardHistoryIfWanted
-
-    Wait-A-Bit
     Test-DoNotDisturbIfWanted
 
     Write-Host ""
