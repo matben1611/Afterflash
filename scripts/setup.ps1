@@ -558,17 +558,50 @@ function Set-MouseAccelerationOff {
     Write-Host ""
 }
 
-function Set-BalancedPowerPlanIfX3D {
+function Set-PowerPlan {
     Write-Host ""
-    $isX3D = Read-YesNo -Prompt "Is an X3D CPU installed?"
+    $setPowerPlan = Read-YesNo -Prompt "Do you want to set the optimal power plan for your CPU"
 
-    if ($isX3D) {
-        Write-Info "Setting power plan to Balanced..."
+    if (-not $setPowerPlan) {
+        Write-Info "Power plan was not changed."
+        Write-Host ""
+        return
+    }
+
+    $cpu = "Unknown"
+    try {
+        $cpu = Get-CimInstance Win32_Processor -ErrorAction Stop |
+            Select-Object -First 1 -ExpandProperty Name
+    }
+    catch {
+        Write-Verbose "Unable to retrieve CPU information"
+    }
+
+    $cpuLower = $cpu.ToLowerInvariant()
+
+    if ($cpuLower -match 'x3d') {
+        Write-Info "X3D CPU detected: $cpu"
+        Write-Info "Setting power plan to Balanced (recommended for X3D)..."
         powercfg /setactive SCHEME_BALANCED | Out-Null
         Write-Ok "Power plan set to Balanced."
     }
     else {
-        Write-Info "X3D answer = No -> power plan remains unchanged."
+        Write-Info "CPU detected: $cpu"
+
+        $ultimateGuid = 'e9a42b02-d5df-448d-aa00-03f14749eb61'
+        $schemes = powercfg /list 2>&1
+
+        if ($schemes -match $ultimateGuid) {
+            Write-Info "Setting power plan to Ultimate Performance..."
+            powercfg /setactive $ultimateGuid | Out-Null
+            Write-Ok "Power plan set to Ultimate Performance."
+        }
+        else {
+            Write-Info "Ultimate Performance not available."
+            Write-Info "Setting power plan to High Performance..."
+            powercfg /setactive SCHEME_MIN | Out-Null
+            Write-Ok "Power plan set to High Performance."
+        }
     }
 
     Write-Host ""
@@ -995,7 +1028,7 @@ try {
     Set-HardwareAcceleratedGpuSchedulingOn 
     Set-VariableRefreshRateOff 
     Set-GameModeOff
-    Set-BalancedPowerPlanIfX3D 
+    Set-PowerPlan
     Set-MouseAccelerationOff
     Set-OptionalDiagnosticDataOff   
     Set-DeliveryOptimizationHttpOnly  
