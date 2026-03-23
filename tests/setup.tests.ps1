@@ -1,12 +1,14 @@
 param()
 
-# Test that script is syntactically valid
+$scriptsDir  = Join-Path (Split-Path -Parent $PSScriptRoot) 'scripts'
+$modulesDir  = Join-Path $scriptsDir 'modules'
+
 Describe "setup.ps1 Validation" {
-    
+
     BeforeAll {
-        $SetupScriptPath = Join-Path -Path (Split-Path -Parent $PSScriptRoot) -ChildPath "scripts\setup.ps1"
+        $SetupScriptPath = Join-Path $scriptsDir 'setup.ps1'
     }
-    
+
     It "Script exists" {
         Test-Path -Path $SetupScriptPath | Should -Be $true
     }
@@ -21,7 +23,7 @@ Describe "setup.ps1 Validation" {
     }
 
     It "Script can be parsed without execution" {
-        { 
+        {
             [void]([System.Management.Automation.PSParser]::Tokenize(
                 (Get-Content -Path $SetupScriptPath -Raw),
                 [ref]@()
@@ -30,90 +32,123 @@ Describe "setup.ps1 Validation" {
     }
 }
 
+Describe "Module Syntax Validation" {
+
+    $moduleFiles = @('helpers.ps1', 'system.ps1', 'tweaks.ps1', 'apps.ps1')
+
+    foreach ($file in $moduleFiles) {
+        It "modules\$file has valid PowerShell syntax" {
+            $path = Join-Path $modulesDir $file
+            Test-Path $path | Should -Be $true
+            $errors = @()
+            $null = [System.Management.Automation.PSParser]::Tokenize(
+                (Get-Content -Path $path -Raw),
+                [ref]$errors
+            )
+            $errors.Count | Should -Be 0
+        }
+    }
+}
+
 Describe "Script Structure" {
-    
+
     BeforeAll {
-        $SetupScriptPath = Join-Path -Path (Split-Path -Parent $PSScriptRoot) -ChildPath "scripts\setup.ps1"
-        $scriptContent = Get-Content -Path $SetupScriptPath -Raw
+        $script:allContent = (Get-ChildItem -Path $modulesDir -Filter '*.ps1') |
+            ForEach-Object { Get-Content $_.FullName -Raw } |
+            Out-String
     }
 
     It "Contains function Test-IsAdmin" {
-        $scriptContent | Should -Match 'function\s+Test-IsAdmin'
+        $script:allContent | Should -Match 'function\s+Test-IsAdmin'
     }
 
     It "Contains function Wait-A-Bit" {
-        $scriptContent | Should -Match 'function\s+Wait-A-Bit'
+        $script:allContent | Should -Match 'function\s+Wait-A-Bit'
     }
 
     It "Contains function Read-YesNo" {
-        $scriptContent | Should -Match 'function\s+Read-YesNo'
+        $script:allContent | Should -Match 'function\s+Read-YesNo'
     }
 
     It "Contains function Write-Info" {
-        $scriptContent | Should -Match 'function\s+Write-Info'
+        $script:allContent | Should -Match 'function\s+Write-Info'
     }
 
     It "Contains function Write-Ok" {
-        $scriptContent | Should -Match 'function\s+Write-Ok'
+        $script:allContent | Should -Match 'function\s+Write-Ok'
     }
 
     It "Contains function Set-DwordValue" {
-        $scriptContent | Should -Match 'function\s+Set-DwordValue'
+        $script:allContent | Should -Match 'function\s+Set-DwordValue'
     }
 
     It "Contains function Set-StringValue" {
-        $scriptContent | Should -Match 'function\s+Set-StringValue'
+        $script:allContent | Should -Match 'function\s+Set-StringValue'
     }
 
     It "Contains Set-BiosRecommendationsFileIfWanted function" {
-        $scriptContent | Should -Match 'function\s+Set-BiosRecommendationsFileIfWanted'
+        $script:allContent | Should -Match 'function\s+Set-BiosRecommendationsFileIfWanted'
     }
 
     It "Contains Set-OptionalDiagnosticDataOff function" {
-        $scriptContent | Should -Match 'function\s+Set-OptionalDiagnosticDataOff'
+        $script:allContent | Should -Match 'function\s+Set-OptionalDiagnosticDataOff'
     }
 
     It "Contains Set-DeliveryOptimizationHttpOnly function" {
-        $scriptContent | Should -Match 'function\s+Set-DeliveryOptimizationHttpOnly'
+        $script:allContent | Should -Match 'function\s+Set-DeliveryOptimizationHttpOnly'
     }
 
     It "Contains Set-HardwareAcceleratedGpuSchedulingOn function" {
-        $scriptContent | Should -Match 'function\s+Set-HardwareAcceleratedGpuSchedulingOn'
+        $script:allContent | Should -Match 'function\s+Set-HardwareAcceleratedGpuSchedulingOn'
     }
 
     It "Contains Set-VariableRefreshRateOn function" {
-        $scriptContent | Should -Match 'function\s+Set-VariableRefreshRateOn'
+        $script:allContent | Should -Match 'function\s+Set-VariableRefreshRateOn'
     }
 
     It "Contains Set-GameModeOff function" {
-        $scriptContent | Should -Match 'function\s+Set-GameModeOff'
+        $script:allContent | Should -Match 'function\s+Set-GameModeOff'
     }
 
     It "Contains Set-MouseAccelerationOff function" {
-        $scriptContent | Should -Match 'function\s+Set-MouseAccelerationOff'
+        $script:allContent | Should -Match 'function\s+Set-MouseAccelerationOff'
     }
 
     It "Contains Show-SystemInformation function" {
-        $scriptContent | Should -Match 'function\s+Show-SystemInformation'
+        $script:allContent | Should -Match 'function\s+Show-SystemInformation'
     }
 
     It "Contains Open-GpuDriverPageIfWanted function" {
-        $scriptContent | Should -Match 'function\s+Open-GpuDriverPageIfWanted'
+        $script:allContent | Should -Match 'function\s+Open-GpuDriverPageIfWanted'
     }
 
     It "Contains Open-ChipsetsDriverPageIfWanted function" {
-        $scriptContent | Should -Match 'function\s+Open-ChipsetsDriverPageIfWanted'
+        $script:allContent | Should -Match 'function\s+Open-ChipsetsDriverPageIfWanted'
     }
 
     It "Uses Read-YesNo for user confirmations" {
-        $scriptContent | Should -Match 'Read-YesNo'
-    }
-
-    It "Has proper error handling" {
-        $scriptContent | Should -Match 'catch\s*{'
+        $script:allContent | Should -Match 'Read-YesNo'
     }
 
     It "Uses Write-Verbose for debugging" {
-        $scriptContent | Should -Match 'Write-Verbose'
+        $script:allContent | Should -Match 'Write-Verbose'
+    }
+}
+
+Describe "setup.ps1 Orchestration" {
+
+    BeforeAll {
+        $script:setupContent = Get-Content (Join-Path $scriptsDir 'setup.ps1') -Raw
+    }
+
+    It "Dot-sources all modules" {
+        $script:setupContent | Should -Match '\.\s+".*helpers\.ps1"'
+        $script:setupContent | Should -Match '\.\s+".*system\.ps1"'
+        $script:setupContent | Should -Match '\.\s+".*tweaks\.ps1"'
+        $script:setupContent | Should -Match '\.\s+".*apps\.ps1"'
+    }
+
+    It "Has proper error handling" {
+        $script:setupContent | Should -Match 'catch\s*{'
     }
 }
