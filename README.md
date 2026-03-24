@@ -11,16 +11,22 @@ performance settings, and optional debloat actions on a fresh PC. Built out of
 my personal interest in PC building and optimization, with the goal of saving
 time and reducing repetitive setup work after each build.
 
+<br>
+
 ## Features
 
 ### System Information
 
 - Overview of CPU, GPU, RAM, mainboard, BIOS version and OS
 
+<br>
+
 ### Driver Downloads
 
 - GPU driver page for AMD or NVIDIA (auto-detected)
 - Chipset driver page for Intel or AMD (auto-detected)
+
+<br>
 
 ### Performance *(applied with confirmation)*
 
@@ -30,10 +36,14 @@ time and reducing repetitive setup work after each build.
 - Mouse Acceleration: **Off**
 - Power Plan: **Ultimate Performance** / **High Performance** / **Balanced** for X3D CPUs (auto-detected)
 
+<br>
+
 ### Privacy *(applied with confirmation)*
 
 - Optional diagnostic data: **disabled**
 - Delivery Optimization P2P: **disabled**
+
+<br>
 
 ### Optional
 
@@ -42,17 +52,23 @@ time and reducing repetitive setup work after each build.
 - Do Not Disturb / Notifications
 - BIOS recommendations file on the Desktop
 
+<br>
+
 ### Tools
 
 - [Ninite](https://ninite.com/) for bulk app installation
 - Windows Update trigger
 - [Win11Debloat](https://github.com/Raphire/Win11Debloat) integration
 
+<br>
+
 ## Quick Start
 
 ### Option A — Standalone EXE *(recommended for USB use)*
 
 Download `afterflash.exe` and run it directly — no installation needed.
+
+<br>
 
 ### Option B — PowerShell Script
 
@@ -63,10 +79,14 @@ Download `afterflash.exe` and run it directly — no installation needed.
 .\scripts\setup.ps1
 ```
 
+<br>
+
 ### Option C — Standalone BAT
 
 Run `afterflash-standalone.bat` directly. All PowerShell code is embedded —
 no additional files required.
+
+<br>
 
 ### If PowerShell says the script is not digitally signed
 
@@ -75,11 +95,15 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 Get-ChildItem -Path . -Filter *.ps1 -Recurse | Unblock-File
 ```
 
+<br>
+
 ## Requirements
 
 - **Windows 10** or **Windows 11**
 - **PowerShell 5.0+** (pre-installed on Windows 10/11)
 - **Administrator privileges** (script will request elevation automatically)
+
+<br>
 
 ## Verification
 
@@ -92,6 +116,8 @@ that settings were applied correctly:
 
 This script opens relevant Windows settings pages without making any changes.
 
+<br>
+
 ## Building the EXE
 
 The EXE is built from `afterflash-standalone.bat` using the build script:
@@ -102,6 +128,8 @@ The EXE is built from `afterflash-standalone.bat` using the build script:
 
 Requires PS2EXE (installed automatically if missing) and PowerShell with
 administrator privileges.
+
+<br>
 
 ## Development
 
@@ -127,6 +155,8 @@ npm install -g markdownlint-cli
 markdownlint -c .markdownlint.json .
 ```
 
+<br>
+
 ## External Tools
 
 ### Win11Debloat
@@ -138,10 +168,14 @@ If selected, the script launches it via its official quick-launch command:
 & ([scriptblock]::Create((irm "https://debloat.raphi.re/")))
 ```
 
+<br>
+
 ### Ninite
 
 [Ninite](https://ninite.com/) is not bundled. If selected, the script opens
 the official website in the browser.
+
+<br>
 
 ## BIOS Recommendations
 
@@ -153,6 +187,8 @@ the official website in the browser.
 > It only generates a recommendations file for manual review.
 >
 > **You are fully responsible for any BIOS changes you make.**
+
+<br>
 
 ## License
 
