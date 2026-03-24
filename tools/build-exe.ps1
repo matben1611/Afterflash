@@ -3,10 +3,11 @@ param()
 
 $ErrorActionPreference = 'Stop'
 
-$root = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+$toolsDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+$root     = Split-Path -Parent $toolsDir
 
 $batFile = Join-Path $root 'afterflash-standalone.bat'
-$pngFile = Join-Path $root 'afterflash.png'
+$pngFile = Join-Path $root 'assets\afterflash.png'
 $ps1File = Join-Path $root 'afterflash-standalone.ps1'
 $icoFile = Join-Path $root 'afterflash.ico'
 $exeFile = Join-Path $root 'afterflash.exe'
