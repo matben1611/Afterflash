@@ -9,12 +9,14 @@ $modulesDir = Join-Path $PSScriptRoot 'modules'
 . "$modulesDir\system.ps1"
 . "$modulesDir\tweaks.ps1"
 . "$modulesDir\apps.ps1"
+. "$modulesDir\monitoring.ps1"
 
 $script:quickSetup         = $false
 $script:currentStep        = 0
-$script:totalSteps         = 28
+$script:totalSteps         = 29
 $script:currentStepApplied = $false
 $script:report             = [System.Collections.ArrayList]::new()
+$script:logFile            = Join-Path $env:TEMP "afterflash-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
 
 function Invoke-Step {
     param(
@@ -60,6 +62,9 @@ try {
     $Host.UI.RawUI.ForegroundColor = 'White'
     Clear-Host
 
+    Add-Content -Path $script:logFile -Value "afterflash log - $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -Encoding UTF8
+    Add-Content -Path $script:logFile -Value "========================================" -Encoding UTF8
+
     Write-Host ""
     Write-Host "========================================"
     Write-Host "         Windows Setup Starting         "
@@ -75,6 +80,8 @@ try {
     Show-SystemInformation
 
     Wait-A-Bit
+
+    Invoke-Step 'Hardware Monitoring' { Show-HardwareMonitoring }
 
     Write-Host ""
     $createRestorePoint = Read-YesNo -Prompt "Do you want to create a System Restore Point before making changes"
@@ -134,6 +141,8 @@ try {
     Write-Host "========================================"
     Write-Host "               Finished                 "
     Write-Host "========================================"
+    Write-Host ""
+    Write-Host "  Log saved to: $script:logFile" -ForegroundColor DarkGray
     Write-Host ""
 }
 catch {

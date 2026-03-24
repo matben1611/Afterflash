@@ -59,20 +59,31 @@ function Restart-AsAdmin {
     }
 }
 
+function Add-ToLog {
+    param([string]$Message)
+    if ($script:logFile) {
+        $timestamp = Get-Date -Format 'HH:mm:ss'
+        Add-Content -Path $script:logFile -Value "[$timestamp] $Message" -Encoding UTF8
+    }
+}
+
 function Write-Info {
     param([string]$Message)
     Write-Host "[INFO ] $Message"
+    Add-ToLog "[INFO ] $Message"
 }
 
 function Write-Ok {
     param([string]$Message)
     Write-Host "[ OK  ] $Message"
+    Add-ToLog "[ OK  ] $Message"
     $script:currentStepApplied = $true
 }
 
 function Write-WarnMsg {
     param([string]$Message)
     Write-Warning $Message
+    Add-ToLog "[WARN ] $Message"
 }
 
 function Read-YesNo {
