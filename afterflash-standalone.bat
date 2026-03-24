@@ -1439,10 +1439,6 @@ try {
     Wait-A-Bit
 
     Write-Host ""
-    $script:quickSetup = Read-YesNo -Prompt "Do you want to use Quick Setup (applies all tweaks automatically)"
-    Write-Host ""
-
-    Write-Host ""
     $createRestorePoint = Read-YesNo -Prompt "Do you want to create a System Restore Point before making changes"
     if ($createRestorePoint) {
         Write-Info "Creating System Restore Point..."
@@ -1454,6 +1450,10 @@ try {
             Write-WarnMsg "Could not create Restore Point. System Protection may be disabled on C:."
         }
     }
+    Write-Host ""
+
+    Write-Host ""
+    $script:quickSetup = Read-YesNo -Prompt "Do you want to use Quick Setup (applies all tweaks automatically)"
     Write-Host ""
 
     if ($script:quickSetup) {
