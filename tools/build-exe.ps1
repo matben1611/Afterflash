@@ -34,7 +34,7 @@ try {
             return
         }
 
-        Write-Host "BAT is newer than EXE — rebuilding..."
+        Write-Host "BAT is newer than EXE - rebuilding..."
         Write-Host ""
     }
 
