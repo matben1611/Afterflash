@@ -11,7 +11,7 @@ try {
     $repoRoot = Split-Path -Parent $root           # repo root
 
     $batFile     = Join-Path $root     'afterflash-standalone.bat'
-    $pngFile     = Join-Path $repoRoot 'assets\afterflash.png'
+    $pngFile     = Join-Path $repoRoot 'assets\afterflash-logo.png'
     $versionFile = Join-Path $repoRoot 'VERSION'
     $ps1File     = Join-Path $root     'afterflash-standalone.ps1'
     $icoFile     = Join-Path $root     'afterflash.ico'

@@ -37,6 +37,8 @@ VERSION="$(tr -d '[:space:]' < "$VERSION_FILE")"
 APP_NAME="afterflash-mac-$VERSION"
 APP_PATH="$REPO_ROOT/${APP_NAME}.app"
 STANDALONE_SH="$MAC_DIR/afterflash-mac-standalone.sh"
+LOGO_PNG="$REPO_ROOT/assets/afterflash-logo.png"
+ICNS_FILE="$MAC_DIR/afterflash-mac.icns"
 
 echo ""
 echo "========================================"
@@ -69,7 +71,7 @@ fi
 
 # ── 2. Assemble standalone script ────────────────────────────────────────────
 
-echo "[1/3] Assembling standalone script..."
+echo "[1/4] Assembling standalone script..."
 
 {
     echo "#!/usr/bin/env bash"
@@ -103,10 +105,32 @@ echo "[1/3] Assembling standalone script..."
 chmod +x "$STANDALONE_SH"
 echo "    -> $STANDALONE_SH"
 
-# ── 3. Build .app bundle ─────────────────────────────────────────────────────
+# ── 3. Generate .icns icon ───────────────────────────────────────────────────
 
 echo ""
-echo "[2/3] Building .app bundle..."
+echo "[2/4] Generating .icns icon..."
+
+if [[ ! -f "$LOGO_PNG" ]]; then
+    echo "    [!!] Logo not found at $LOGO_PNG — skipping icon." >&2
+else
+    ICONSET_DIR="$(mktemp -d)/afterflash-mac.iconset"
+    mkdir -p "$ICONSET_DIR"
+
+    for size in 16 32 128 256 512; do
+        sips -z $size $size "$LOGO_PNG" --out "$ICONSET_DIR/icon_${size}x${size}.png"          &>/dev/null
+        sips -z $(( size * 2 )) $(( size * 2 )) "$LOGO_PNG" \
+            --out "$ICONSET_DIR/icon_${size}x${size}@2x.png" &>/dev/null
+    done
+
+    iconutil -c icns "$ICONSET_DIR" -o "$ICNS_FILE"
+    rm -rf "$ICONSET_DIR"
+    echo "    -> $ICNS_FILE"
+fi
+
+# ── 4. Build .app bundle ─────────────────────────────────────────────────────
+
+echo ""
+echo "[3/4] Building .app bundle..."
 
 rm -rf "$APP_PATH"
 mkdir -p "$APP_PATH/Contents/MacOS"
@@ -137,6 +161,11 @@ chmod +x "$LAUNCHER"
 cp "$STANDALONE_SH" "$APP_PATH/Contents/Resources/setup.sh"
 chmod +x "$APP_PATH/Contents/Resources/setup.sh"
 
+# --- Icon ---
+if [[ -f "$ICNS_FILE" ]]; then
+    cp "$ICNS_FILE" "$APP_PATH/Contents/Resources/afterflash-mac.icns"
+fi
+
 # --- Info.plist ---
 cat > "$APP_PATH/Contents/Info.plist" << PLIST_EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -157,6 +186,8 @@ cat > "$APP_PATH/Contents/Info.plist" << PLIST_EOF
     <string>${VERSION}</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
+    <key>CFBundleIconFile</key>
+    <string>afterflash-mac</string>
     <key>NSHighResolutionCapable</key>
     <true/>
 </dict>
@@ -168,7 +199,7 @@ echo "    -> $APP_PATH"
 # ── 4. Verify ────────────────────────────────────────────────────────────────
 
 echo ""
-echo "[3/3] Verifying bundle..."
+echo "[4/4] Verifying bundle..."
 
 errors=0
 for required in \

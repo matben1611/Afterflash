@@ -6,6 +6,7 @@ afterflash-standalone.ps1
 afterflash-mac-standalone.sh
 afterflash-mac-*.app
 afterflash-mac-*.zip
+afterflash-mac.icns
 
 # PowerShell
 *.ps1xml
